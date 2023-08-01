@@ -94,7 +94,7 @@
             "id": "ee5e9c26-6ff6-4b8a-861d-0cd4d4665c35",
             "version": "KqlParameterItem/1.0",
             "name": "AlertTarget",
-            "type": 2,
+            "type": 7,
             "isRequired": true,
             "multiSelect": true,
             "quote": "'",
@@ -107,7 +107,8 @@
               "additionalResourceOptions": [
                 "value::1",
                 "value::all"
-              ]
+              ],
+              "showDefault": false
             },
             "defaultValue": "value::all",
             "queryType": 1,
@@ -815,28 +816,77 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n        MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n        AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n        AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n        AlertTarget)\r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget})\r\n| summarize Sev0 = countif(Severity == \"Sev0\"), Sev1 = countif(Severity == \"Sev1\"), Sev2 = countif(Severity == \"Sev2\"), Sev3 = countif(Severity == \"Sev3\"), Sev4 = countif(Severity == \"Sev4\") by subscriptionId",
+              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n        MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n        AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n        AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n        AlertTarget)\r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget})\r\n| summarize Sev0 = countif(Severity == \"Sev0\"), Sev1 = countif(Severity == \"Sev1\"), Sev2 = countif(Severity == \"Sev2\"), Sev3 = countif(Severity == \"Sev3\"), Sev4 = countif(Severity == \"Sev4\") by bin(FireTime, 1d)",
               "size": 0,
+              "title": "Daily Alerts by Severity",
               "queryType": 1,
               "resourceType": "microsoft.resourcegraph/resources",
               "crossComponentResources": [
                 "{Subscription}"
               ],
-              "visualization": "table",
-              "gridSettings": {
-                "formatters": [
+              "visualization": "areachart",
+              "chartSettings": {
+                "xAxis": "FireTime",
+                "seriesLabelSettings": [
                   {
-                    "columnMatch": "subscriptionId",
-                    "formatter": 15,
-                    "formatOptions": {
-                      "linkTarget": null,
-                      "showIcon": true
-                    }
+                    "seriesName": "Sev0",
+                    "color": "redBright"
+                  },
+                  {
+                    "seriesName": "Sev1",
+                    "color": "orange"
+                  },
+                  {
+                    "seriesName": "Sev4",
+                    "color": "blue"
                   }
                 ]
               }
             },
             "name": "query - 4"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         LastModifiedTime = todatetime(properties.essentials.lastModifiedDateTime),\r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService),\r\n         ResolvedTime = todatetime(properties.essentials.monitorConditionResolvedDateTime)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n                MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n                AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n                AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n                AlertTarget)   \r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget}) \r\n| extend OpenTime = datetime_diff('minute', now(), FireTime)\r\n| summarize avg(OpenTime) by subscriptionId",
+              "size": 4,
+              "title": "Open Time by Subscription",
+              "queryType": 1,
+              "resourceType": "microsoft.resourcegraph/resources",
+              "crossComponentResources": [
+                "value::all"
+              ],
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": {
+                  "columnMatch": "subscriptionId",
+                  "formatter": 15,
+                  "formatOptions": {
+                    "linkTarget": null,
+                    "showIcon": true
+                  }
+                },
+                "leftContent": {
+                  "columnMatch": "avg_OpenTime",
+                  "formatter": 12,
+                  "formatOptions": {
+                    "min": 0,
+                    "palette": "greenRed"
+                  },
+                  "numberFormat": {
+                    "unit": 25,
+                    "options": {
+                      "style": "decimal",
+                      "maximumFractionDigits": 2,
+                      "maximumSignificantDigits": 3
+                    }
+                  }
+                },
+                "showBorder": true
+              }
+            },
+            "name": "query - 1 - Copy"
           },
           {
             "type": 3,
@@ -1008,39 +1058,6 @@
               }
             },
             "name": "query - 1 - Copy - Copy - Copy"
-          },
-          {
-            "type": 3,
-            "content": {
-              "version": "KqlItem/1.0",
-              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n        MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n        AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n        AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n        AlertTarget)\r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget})\r\n| summarize Sev0 = countif(Severity == \"Sev0\"), Sev1 = countif(Severity == \"Sev1\"), Sev2 = countif(Severity == \"Sev2\"), Sev3 = countif(Severity == \"Sev3\"), Sev4 = countif(Severity == \"Sev4\") by bin(FireTime, 1d)",
-              "size": 0,
-              "title": "Daily Alerts by Severity",
-              "queryType": 1,
-              "resourceType": "microsoft.resourcegraph/resources",
-              "crossComponentResources": [
-                "{Subscription}"
-              ],
-              "visualization": "barchart",
-              "chartSettings": {
-                "xAxis": "FireTime",
-                "seriesLabelSettings": [
-                  {
-                    "seriesName": "Sev0",
-                    "color": "redBright"
-                  },
-                  {
-                    "seriesName": "Sev1",
-                    "color": "orange"
-                  },
-                  {
-                    "seriesName": "Sev4",
-                    "color": "blue"
-                  }
-                ]
-              }
-            },
-            "name": "query - 4"
           }
         ]
       },
