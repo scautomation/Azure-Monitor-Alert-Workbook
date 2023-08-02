@@ -149,6 +149,33 @@
             "queryType": 1,
             "resourceType": "microsoft.resourcegraph/resources",
             "value": null
+          },
+          {
+            "id": "1e29e659-0425-4fd0-90a8-601b91d60be0",
+            "version": "KqlParameterItem/1.0",
+            "name": "AffectedResource",
+            "type": 2,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         LastModifiedTime = todatetime(properties.essentials.lastModifiedDateTime),\r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService),\r\n         ResolvedTime = todatetime(properties.essentials.monitorConditionResolvedDateTime)\r\n| extend AlertTarget = case(\r\n                MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n                AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n                AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n                AlertTarget)   \r\n| mv-expand Condition = properties\r\n| extend ResourceName = iff(AlertTarget == \"ActivityLog\", properties.context.context.activityLog.subscriptionId, tostring(properties.essentials.targetResourceName))\r\n| distinct ResourceName",
+            "crossComponentResources": [
+              "{Subscription}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::1",
+                "value::3",
+                "value::5",
+                "value::all"
+              ]
+            },
+            "defaultValue": "value::all",
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
           }
         ],
         "style": "pills",
@@ -430,7 +457,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n        MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n        AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n        AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n        AlertTarget)\r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget})\r\n| summarize Sev0 = countif(Severity == \"Sev0\"), \r\n            Sev1 = countif(Severity == \"Sev1\"), \r\n            Sev2 = countif(Severity == \"Sev2\"), \r\n            Sev3 = countif(Severity == \"Sev3\"), \r\n            Sev4 = countif(Severity == \"Sev4\"),\r\n            Resolved = countif(MonitorCondition == \"Resolve\"),\r\n            Fired = countif(MonitorCondition == \"Fired\"),\r\n            Total = count() by subscriptionId",
+              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n        MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n        AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n        AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n        AlertTarget)\r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget})\r\n| summarize Sev0 = countif(Severity == \"Sev0\"), \r\n            Sev1 = countif(Severity == \"Sev1\"), \r\n            Sev2 = countif(Severity == \"Sev2\"), \r\n            Sev3 = countif(Severity == \"Sev3\"), \r\n            Sev4 = countif(Severity == \"Sev4\"),\r\n            Resolved = countif(MonitorCondition == \"Resolve\"),\r\n            Fired = countif(MonitorCondition == \"Fired\"),\r\n            Total = count() by subscriptionId\r\n| sort by Fired desc",
               "size": 0,
               "title": "Alerts by Subscription",
               "queryType": 1,
@@ -500,8 +527,20 @@
                   ],
                   "expandTopLevel": true,
                   "finalBy": "Total"
-                }
+                },
+                "sortBy": [
+                  {
+                    "itemKey": "Fired",
+                    "sortOrder": 2
+                  }
+                ]
               },
+              "sortBy": [
+                {
+                  "itemKey": "Fired",
+                  "sortOrder": 2
+                }
+              ],
               "tileSettings": {
                 "titleContent": {
                   "columnMatch": "name",
@@ -585,7 +624,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         LastModifiedTime = todatetime(properties.essentials.lastModifiedDateTime),\r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService),\r\n         ResolvedTime = todatetime(properties.essentials.monitorConditionResolvedDateTime)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n                MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n                AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n                AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n                AlertTarget)   \r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget})           \r\n| mv-expand Condition = properties.context.context.condition.allOf\r\n| extend SignalLogic = case(\r\n                MonitorService == \"VM Insights - Health\", strcat(\"VM Health for \", properties.essentials.targetResourceName, \" Changed from \", properties.context.monitorStateBeforeAlertCreated, \" to \", properties.context.monitorStateWhenAlertCreated),\r\n                AlertTarget == \"ActivityLog\", strcat(\"When the Activity Log has Category = \", properties.context.context.activityLog.properties.eventCategory, \" and Signal name = \", properties.context.context.activityLog.properties.message),\r\n                MonitorService == \"Smart Detector\", strcat(properties.SmartDetectorName, \" Detected failure rate of \", properties.DetectedFailureRate, \" above normal failure rate of \", properties.context.NormalFailureRate),\r\n                MonitorService == \"Log Analytics\", strcat(\"Alert when \", properties.context.AlertType, \" is \", properties.context.AlertThresholdOperator, \" threshold \", properties.context.AlertThresholdValue),\r\n                MonitorService == \"ActivityLog Autoscale\", strcat(properties.context.context.activityLog.operationName, \" from \", properties.context.context.activityLog.properties.oldInstancesCount, \" to \", properties.context.context.activityLog.properties.newInstancesCount),\r\n                strcat(\"Alert when metric \", Condition.metricName, Condition.timeAggregation, \" is \", Condition.operator, \" threshold \", Condition.threshold)),\r\n         Query = case(\r\n                 MonitorService == \"Log Alerts V2\", tostring(Condition.searchQuery),\r\n                 MonitorService == \"Log Analytics\", tostring(properties.context.SearchQuery), \"N/A\"),\r\n         MetricValue = iff(MonitorService == \"Log Analytics\", toint(properties.context.ResultCount), toint(Condition.metricValue)),\r\n         ResourceName = iff(AlertTarget == \"ActivityLog\", properties.context.context.activityLog.subscriptionId, tostring(properties.essentials.targetResourceName))\r\n| extend OpenTime = iff(MonitorCondition == \"Resolved\", datetime_diff('minute', ResolvedTime, FireTime), datetime_diff('minute', now(), FireTime)),\r\n         Details = pack_all()\r\n| project name, AlertTarget, id, subscriptionId, MonitorCondition, FireTime, LastModifiedTime, OpenTime, SignalLogic, Query, MetricValue, ResourceName, Details",
+              "query": "alertsmanagementresources\r\n| extend FireTime = todatetime(properties.essentials.startDateTime), \r\n         LastModifiedTime = todatetime(properties.essentials.lastModifiedDateTime),\r\n         Severity = tostring(properties.essentials.severity), \r\n         MonitorCondition = tostring(properties.essentials.monitorCondition), \r\n         AlertTarget = tostring(properties.essentials.targetResourceType), \r\n         MonitorService = tostring(properties.essentials.monitorService),\r\n         ResolvedTime = todatetime(properties.essentials.monitorConditionResolvedDateTime)\r\n| where FireTime {TimeRange}\r\n| extend AlertTarget = case(\r\n                MonitorService == 'ActivityLog Administrative', 'ActivityLog',\r\n                AlertTarget == 'microsoft.insights/components', 'App Insights',\r\n                AlertTarget == 'microsoft.operationalinsights/workspaces', 'Log Analytics', \r\n                AlertTarget)   \r\n| where AlertTarget in~ ({AlertTarget}) or '*' in~ ({AlertTarget})           \r\n| mv-expand Condition = properties.context.context.condition.allOf\r\n| extend SignalLogic = case(\r\n                MonitorService == \"VM Insights - Health\", strcat(\"VM Health for \", properties.essentials.targetResourceName, \" Changed from \", properties.context.monitorStateBeforeAlertCreated, \" to \", properties.context.monitorStateWhenAlertCreated),\r\n                AlertTarget == \"ActivityLog\", strcat(\"When the Activity Log has Category = \", properties.context.context.activityLog.properties.eventCategory, \" and Signal name = \", properties.context.context.activityLog.properties.message),\r\n                MonitorService == \"Smart Detector\", strcat(properties.SmartDetectorName, \" Detected failure rate of \", properties.DetectedFailureRate, \" above normal failure rate of \", properties.context.NormalFailureRate),\r\n                MonitorService == \"Log Analytics\", strcat(\"Alert when \", properties.context.AlertType, \" is \", properties.context.AlertThresholdOperator, \" threshold \", properties.context.AlertThresholdValue),\r\n                MonitorService == \"ActivityLog Autoscale\", strcat(properties.context.context.activityLog.operationName, \" from \", properties.context.context.activityLog.properties.oldInstancesCount, \" to \", properties.context.context.activityLog.properties.newInstancesCount),\r\n                strcat(\"Alert when metric \", Condition.metricName, Condition.timeAggregation, \" is \", Condition.operator, \" threshold \", Condition.threshold)),\r\n         Query = case(\r\n                 MonitorService == \"Log Alerts V2\", tostring(Condition.searchQuery),\r\n                 MonitorService == \"Log Analytics\", tostring(properties.context.SearchQuery), \"N/A\"),\r\n         MetricValue = iff(MonitorService == \"Log Analytics\", toint(properties.context.ResultCount), toint(Condition.metricValue)),\r\n         AffectedResource = iff(AlertTarget == \"ActivityLog\", properties.context.context.activityLog.subscriptionId, tostring(properties.essentials.targetResourceName))\r\n| where AffectedResource in ({AffectedResource})\r\n| extend OpenTime = iff(MonitorCondition == \"Resolved\", datetime_diff('minute', ResolvedTime, FireTime), datetime_diff('minute', now(), FireTime)),\r\n         Details = pack_all()\r\n| project name, AlertTarget, id, subscriptionId, AffectedResource, MonitorCondition, FireTime, LastModifiedTime, OpenTime, SignalLogic, Query, MetricValue, Details",
               "size": 2,
               "showAnalytics": true,
               "title": "Detailed Alert view for Selected Timerange",
